@@ -6,9 +6,9 @@
 //
 
 // challenge!!
-// 1. Stop the player from cheating by lifting their finger and tapping elsewhere – try implementing touchesEnded() to make it work.
-// 2. Make the timer start at one second, but then after 20 enemies have been made subtract 0.1 seconds from it so it’s triggered every 0.9 seconds. After making 20 more, subtract another 0.1, and so on. Note: you should call invalidate() on gameTimer before giving it a new value, otherwise you end up with multiple timers.
-// 3. Stop creating space debris after the player has died.
+// 1. Stop the player from cheating by lifting their finger and tapping elsewhere – try implementing touchesEnded() to make it work. ✅
+// 2. Make the timer start at one second, but then after 20 enemies have been made subtract 0.1 seconds from it so it’s triggered every 0.9 seconds. After making 20 more, subtract another 0.1, and so on. Note: you should call invalidate() on gameTimer before giving it a new value, otherwise you end up with multiple timers. ✅
+// 3. Stop creating space debris after the player has died. ✅
 
 import SpriteKit
 
@@ -19,19 +19,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var player: SKSpriteNode!
     var scoreLabel: SKLabelNode!
     
+    var endScoreDisplay: SKLabelNode!
+    
     var possibleEnemies = ["ball", "hammer", "tv"]
     var gameTimer: Timer?
     var isGameOver = false
     
-    
+    var enemyCountLabel: SKLabelNode!
     
     var score = 0 {
         didSet {
-            scoreLabel.text = "Score \(score)"
+            scoreLabel.text = "Score: \(score)"
         }
     }
     
+    var enemyCount = 0 {
+        didSet {
+            enemyCountLabel.text = "Enemies: \(enemyCount)"
+        }
+    }
     
+    var timeLevel = 1
     
     override func didMove(to view: SKView) {
         backgroundColor = .black
@@ -54,12 +62,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.horizontalAlignmentMode = .left
         addChild(scoreLabel)
         
+        enemyCountLabel = SKLabelNode(fontNamed: "Chalkduster")
+        enemyCountLabel.position = CGPoint(x: 1000, y: 16)
+        enemyCountLabel.horizontalAlignmentMode = .right
+        addChild(enemyCountLabel)
+        
         score = 0
         
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
         
-        gameTimer = Timer.scheduledTimer(timeInterval: 0.35, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        gameTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+            
+
+    
     }
     
     @objc func createEnemy() {
@@ -76,6 +92,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         sprite.physicsBody?.linearDamping = 0
         sprite.physicsBody?.angularVelocity = 0
         
+        enemyCount += 1
+        
+        if enemyCount > 5 && enemyCount < 10 {
+            gameTimer?.invalidate()
+            gameTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        } else if enemyCount > 10 && enemyCount < 20 {
+            gameTimer?.invalidate()
+            gameTimer = Timer.scheduledTimer(timeInterval: 0.35, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        }
     }
     
     
@@ -106,6 +131,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.position = location
     }
     
+//    challenge #1: prevent player from cheating when they lift finger and place it elsewhere.
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        player.removeFromParent()
+//        isGameOver = true
+        endGame()
+    }
     
 
     
@@ -119,6 +150,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(explosion)
         
         player.removeFromParent()
+//        isGameOver = true
+        endGame()
+    }
+    
+    
+//    create a gameOver display
+    func endGame() {
         isGameOver = true
+        
+        endScoreDisplay = SKLabelNode(fontNamed: "Chalkduster")
+        endScoreDisplay.position = CGPoint(x: 512, y: 384)
+        endScoreDisplay.text = "Score: \(score)"
+        endScoreDisplay.fontSize = 120
+        addChild(endScoreDisplay)
+        
+        scoreLabel.text = ""
+        
+// challenge #3 - stop producing debris when game is over.
+        gameTimer?.invalidate()
+        
     }
 }
